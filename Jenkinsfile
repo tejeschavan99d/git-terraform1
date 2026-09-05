@@ -113,6 +113,7 @@ pipeline {
                             terraform init
                             terraform validate
                             terraform plan
+                            rm -rf .terraform
                         '''
                     }
                 }
@@ -143,6 +144,7 @@ pipeline {
                             terraform init
                             terraform validate
                             terraform plan
+                            rm -rf .terraform
                         '''
                     }
                 }
@@ -166,6 +168,7 @@ pipeline {
                             terraform init
                             terraform validate
                             terraform plan
+                            rm -rf .terraform
                         '''
                     }
                 }
@@ -189,6 +192,7 @@ pipeline {
                             terraform init
                             terraform validate
                             terraform plan
+                            rm -rf .terraform
                         '''
                     }
                 }
@@ -219,6 +223,7 @@ pipeline {
                             terraform init
                             terraform validate
                             terraform plan
+                            rm -rf .terraform
                         '''
                     }
                 }
@@ -226,3 +231,4 @@ pipeline {
         }
     }
 }
+
