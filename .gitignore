@@ -11,6 +11,5 @@ crash.*.log
 
 # SSH private keys
 *.pem
-terra-key-ec2
 id_rsa
 id_rsa.*
