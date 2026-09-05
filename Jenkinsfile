@@ -51,11 +51,11 @@ pipeline {
                     pwd
 
                     for dir in \
-                        "env/prod/vpc" \
-                        "env/prod/sg" \
-                        "env/prod/key_pair" \
-                        "env/prod/s3" \
-                        "env/prod/ec2"
+                        "module5/env/prod/vpc" \
+                        "module5/env/prod/sg" \
+                        "module5/env/prod/key_pair" \
+                        "module5/env/prod/s3" \
+                        "module5/env/prod/ec2"
                     do
                         echo ""
                         echo "Checking: $dir"
