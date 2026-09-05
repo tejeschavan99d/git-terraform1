@@ -48,6 +48,7 @@ pipeline {
                     set -e
 
                     echo "===== TERRAFORM DIRECTORIES ====="
+                    pwd
 
                     for dir in \
                         "env/prod/vpc" \
