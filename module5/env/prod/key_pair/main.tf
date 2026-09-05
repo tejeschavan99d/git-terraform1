@@ -15,8 +15,8 @@ provider "aws" {
   region = "ap-south-1"
 }
 module "key_pair" {
-  source = "../../../../module5/key_pair/module"
-  env = "prod"
-  app = "web"
-  pub_file = "/Users/tejes/Downloads/terraform/module5/key_pair/module/terra-key-ec2.pub"
+  source   = "../../../../module5/key_pair/module"
+  env      = "prod"
+  app      = "web"
+  pub_file = "${path.module}/terra-key-ec2.pub"
 }
