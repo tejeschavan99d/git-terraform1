@@ -98,7 +98,7 @@ pipeline {
 
         stage('VPC') {
             steps {
-                dir('env/prod/vpc') {
+                dir('module5/env/prod/vpc') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
                          credentialsId: "${AWS_CREDENTIALS}"]
@@ -128,7 +128,7 @@ pipeline {
 
         stage('SG') {
             steps {
-                dir('env/prod/sg') {
+                dir('module5/env/prod/sg') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
                          credentialsId: "${AWS_CREDENTIALS}"]
@@ -151,7 +151,7 @@ pipeline {
 
         stage('Key Pair') {
             steps {
-                dir('env/prod/key_pair') {
+                dir('module5/env/prod/key_pair') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
                          credentialsId: "${AWS_CREDENTIALS}"]
@@ -174,7 +174,7 @@ pipeline {
 
         stage('S3') {
             steps {
-                dir('env/prod/s3') {
+                dir('module5/env/prod/s3') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
                          credentialsId: "${AWS_CREDENTIALS}"]
@@ -204,7 +204,7 @@ pipeline {
 
         stage('EC2') {
             steps {
-                dir('env/prod/ec2') {
+                dir('module5/env/prod/ec2') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
                          credentialsId: "${AWS_CREDENTIALS}"]
