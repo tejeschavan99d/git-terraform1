@@ -4,6 +4,11 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        AWS_CREDENTIALS = 'aws-terraform'
     }
 
     stages {
@@ -25,110 +30,221 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform']
+                     credentialsId: "${AWS_CREDENTIALS}"]
                 ]) {
                     sh '''
+                        echo "Current user:"
                         whoami
+
+                        echo "AWS CLI version:"
+                        aws --version
+
+                        echo "AWS Identity:"
                         aws sts get-caller-identity
                     '''
                 }
             }
         }
 
-        stage('Terraform Init') {
+        /*
+         * ============================
+         * VPC
+         * ============================
+         */
+        stage('Terraform Init - VPC') {
             steps {
-                dir('module2') {
-                    sh '''
-                        terraform init
-                    '''
+                dir('env/prod/vpc') {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                         credentialsId: "${AWS_CREDENTIALS}"]
+                    ]) {
+                        sh '''
+                            terraform init
+                        '''
+                    }
                 }
             }
         }
 
         stage('Terraform Plan - VPC') {
             steps {
-                dir('module2') {
+                dir('env/prod/vpc') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
-                         credentialsId: 'aws-terraform']
+                         credentialsId: "${AWS_CREDENTIALS}"]
                     ]) {
                         sh '''
-                            terraform plan -target=module.vpc
+                            terraform plan
                         '''
                     }
                 }
             }
         }
 
-        /*
-         * Manual approval between VPC and SG
-         */
-        stage('Approve VPC -> SG') {
+        stage('Approve VPC') {
             steps {
-                input message: 'VPC plan completed. Do you want to continue with SG?', 
+                input message: 'VPC plan completed. Continue with SG?', 
                       ok: 'Proceed to SG'
+            }
+        }
+
+        /*
+         * ============================
+         * SECURITY GROUP
+         * ============================
+         */
+        stage('Terraform Init - SG') {
+            steps {
+                dir('env/prod/sg') {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                         credentialsId: "${AWS_CREDENTIALS}"]
+                    ]) {
+                        sh '''
+                            terraform init
+                        '''
+                    }
+                }
             }
         }
 
         stage('Terraform Plan - SG') {
             steps {
-                dir('module2') {
+                dir('env/prod/sg') {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding',
-                         credentialsId: 'aws-terraform']
+                         credentialsId: "${AWS_CREDENTIALS}"]
                     ]) {
                         sh '''
-                            terraform plan -target=module.sg
+                            terraform plan
                         '''
                     }
                 }
             }
         }
-        stage('Terraform Plan - IAM, Key Pair & S3') {
+
+        stage('Approve SG') {
+            steps {
+                input message: 'SG plan completed. Continue with Key Pair and S3?', 
+                      ok: 'Proceed'
+            }
+        }
+
+        /*
+         * ============================
+         * KEY PAIR + S3
+         * ============================
+         */
+        stage('Terraform Plan - Key Pair & S3') {
             parallel {
 
-                stage('IAM') {
-                    steps {
-                        dir('module2') {
-                            withCredentials([
-                                [$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: 'aws-terraform']
-                            ]) {
-                                sh '''
-                                    terraform plan -target=module.iam
-                                '''
+                stage('Key Pair') {
+                    stages {
+                        stage('Init') {
+                            steps {
+                                dir('env/prod/key_pair') {
+                                    withCredentials([
+                                        [$class: 'AmazonWebServicesCredentialsBinding',
+                                         credentialsId: "${AWS_CREDENTIALS}"]
+                                    ]) {
+                                        sh '''
+                                            terraform init
+                                        '''
+                                    }
+                                }
                             }
                         }
-                    }
-                }
 
-                stage('Key Pair') {
-                    steps {
-                        dir('module2') {
-                            withCredentials([
-                                [$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: 'aws-terraform']
-                            ]) {
-                                sh '''
-                                    terraform plan -target=module.key_pair
-                                '''
+                        stage('Plan') {
+                            steps {
+                                dir('env/prod/key_pair') {
+                                    withCredentials([
+                                        [$class: 'AmazonWebServicesCredentialsBinding',
+                                         credentialsId: "${AWS_CREDENTIALS}"]
+                                    ]) {
+                                        sh '''
+                                            terraform plan
+                                        '''
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
                 stage('S3') {
-                    steps {
-                        dir('module2') {
-                            withCredentials([
-                                [$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: 'aws-terraform']
-                            ]) {
-                                sh '''
-                                    terraform plan -target=module.s3
-                                '''
+                    stages {
+                        stage('Init') {
+                            steps {
+                                dir('env/prod/s3') {
+                                    withCredentials([
+                                        [$class: 'AmazonWebServicesCredentialsBinding',
+                                         credentialsId: "${AWS_CREDENTIALS}"]
+                                    ]) {
+                                        sh '''
+                                            terraform init
+                                        '''
+                                    }
+                                }
                             }
                         }
+
+                        stage('Plan') {
+                            steps {
+                                dir('env/prod/s3') {
+                                    withCredentials([
+                                        [$class: 'AmazonWebServicesCredentialsBinding',
+                                         credentialsId: "${AWS_CREDENTIALS}"]
+                                    ]) {
+                                        sh '''
+                                            terraform plan
+                                        '''
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+         * ============================
+         * EC2
+         * ============================
+         */
+        stage('Approve EC2') {
+            steps {
+                input message: 'VPC, SG, Key Pair and S3 plans completed. Continue with EC2?', 
+                      ok: 'Proceed to EC2'
+            }
+        }
+
+        stage('Terraform Init - EC2') {
+            steps {
+                dir('env/prod/ec2') {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                         credentialsId: "${AWS_CREDENTIALS}"]
+                    ]) {
+                        sh '''
+                            terraform init
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan - EC2') {
+            steps {
+                dir('env/prod/ec2') {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                         credentialsId: "${AWS_CREDENTIALS}"]
+                    ]) {
+                        sh '''
+                            terraform plan
+                        '''
                     }
                 }
             }
